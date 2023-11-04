@@ -1,12 +1,22 @@
-pretrained_weights: ""
-data_path: ""
-input_shape: [960,520]
-batch_size: 16
-num_workers: 10
-lr: 0.001
-optimizer: "adam"
-epochs: 10
-device: 0
-train_logs: ""
-downsample_factor: 4
-
+Data:
+  train_data_path: "/hdd/train_logs/SRGAN/data/img_align_celeba/train.json"
+  val_data_path: "/hdd/train_logs/SRGAN/data/img_align_celeba/val.json"
+  input_shape: [192, 128]  # Input shape to the network in the format [width, height]
+  downsample_factor: 4  # Downsample factor for low resolution images
+  num_workers: 30  # Number of dataloader workers
+  gpu: 0  # GPU ID
+Generator:
+  pretrained_weights: ""
+  optimizer: "adam"
+  lr: 0.0001
+Discriminator:
+  pretrained_weights: ""
+  optimizer: "adam"
+  lr: 0.0001
+Hyperparameters:
+  batch_size: 16
+  epochs: 10
+  generator_num: 5  # Train generator generator_num times more often than discriminator
+Logging:
+  tb_images_per_epoch: 5  # How many images to generate on Tensorboard during an epoch
+  train_logs: "/hdd/train_logs/SRGAN/train_logs/img_align_celeba/run2"

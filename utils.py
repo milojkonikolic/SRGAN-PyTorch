@@ -1,3 +1,4 @@
+import os
 import logging
 import torch
 
@@ -12,14 +13,20 @@ def get_logger():
     return logger
 
 
-def get_device(device):
-    if device == "cpu":
-        print("Selected device: CPU")
+def save_weights(model, weights_dir, model_name, epoch, logger):
+    weights_path = os.path.join(weights_dir, f"srgan_{model_name}_ep{epoch}.pt")
+    torch.save(model.state_dict(), weights_path)
+    logger.info(f"Model saved {weights_path}")
+
+
+def get_gpu(gpu, logger):
+    if gpu == "cpu":
+        logger.info("Selected CPU instead of GPU. Consider using GPU for better performance")
         return torch.device("cpu")
     else:
-        assert torch.cuda.is_available(), f"CUDA unavailable, invalid device {device} requested"
-        print(f"Selected device: GPU{device}")
-        return torch.device(f"cuda:{device}")
+        assert torch.cuda.is_available(), f"CUDA unavailable, invalid gpu {gpu} requested"
+        logger.info(f"Selected gpu: GPU{gpu}")
+        return torch.device(f"cuda:{gpu}")
 
 
 def get_optimizer(model, opt, lr=0.001):

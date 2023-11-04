@@ -3,14 +3,25 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+def get_pad(kernel_size):
+
+    if isinstance(kernel_size, int):
+        return kernel_size // 2
+    elif isinstance(kernel_size, list) or isinstance(kernel_size, tuple):
+        return (kernel_size[0] // 2, kernel_size[1] // 2)
+    else:
+        raise ValueError(f"Not supported type for kernel_size: {type(kernel_size)}. "
+                         f"Supported types: int, list, tuple")
+
+
 class ResBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=(3, 3), strides=(1, 1)):
-        super(ResBlock, self).__init()
+        super(ResBlock, self).__init__()
         self.conv1 = nn.Conv2d(in_channels[0], out_channels[0], kernel_size[0],
-                              strides[0], padding="same")
+                               strides[0], padding="same")
         self.bn1 = nn.BatchNorm2d(out_channels[0])
         self.conv2 = nn.Conv2d(in_channels[1], out_channels[1], kernel_size[1],
-                              strides[1], padding="same")
+                               strides[1], padding="same")
         self.bn2 = nn.BatchNorm2d(out_channels[1])
 
         if in_channels[0] != out_channels[1]:
@@ -22,19 +33,21 @@ class ResBlock(nn.Module):
             self.shortcut = nn.Sequential()
 
     def forward(self, x):
-        out = F.prelu(self.bn1(self.conv1(x)), 0.25)
+        out = F.prelu(self.bn1(self.conv1(x)), torch.tensor(0.25, device='cuda'))
         out = self.bn2(self.conv2(out))
         out = out + self.shortcut(x)
-        return F.prelu(out, 0.25)
+        return F.prelu(out, torch.tensor(0.25, device='cuda'))
 
 
 class ConvLayer(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride, activation="lrelu", bn=True):
-        super(ConvLayer, self).__init()
+    def __init__(self, in_channels, out_channels, kernel_size, stride, padding="same", activation="lrelu", bn=True):
+        super(ConvLayer, self).__init__()
+        if padding == "same" and stride > 1:
+            padding = get_pad(kernel_size)
         self.activation = activation
         self.bn = bn
         self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels,
-                              kernel_size=kernel_size, stride=stride, padding="same")
+                              kernel_size=kernel_size, stride=stride, padding=padding)
         self.batch_norm = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
@@ -44,27 +57,27 @@ class ConvLayer(nn.Module):
         if self.activation == "lrelu":
             x = F.leaky_relu(x, 0.2)
         elif self.activation == "prelu":
-            x = F.prelu(x, 0.25)
+            x = F.prelu(x, torch.tensor(0.25, device='cuda'))
         return x
 
 
 class ConvLayerPixelShuffler(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride):
-        super(ConvLayer, self).__init()
+        super(ConvLayerPixelShuffler, self).__init__()
         self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels,
-                              kernel_size=kernel_size, stride=stride, padding="same")
+                              kernel_size=kernel_size, stride=stride, padding=get_pad(kernel_size))
         self.pixelShuffler = nn.PixelShuffle(2)
 
     def forward(self, x):
         x = self.conv(x)
         x = self.pixelShuffler(x)
-        x = F.prelu(x, 0.25)
+        x = F.prelu(x, torch.tensor(0.25, device='cuda'))
         return x
 
 
 class Discriminator(nn.Module):
     def __init__(self, height, width):
-        super(Discriminator, self).__init()
+        super(Discriminator, self).__init__()
         self.conv1 = ConvLayer(3, 64, 3, 1, bn=False)
         self.conv2 = ConvLayer(64, 64, 3, 2)
         self.conv3 = ConvLayer(64, 128, 3, 1)
@@ -73,8 +86,8 @@ class Discriminator(nn.Module):
         self.conv6 = ConvLayer(256, 256, 3, 2)
         self.conv7 = ConvLayer(256, 512, 3, 1)
         self.conv8 = ConvLayer(512, 512, 3, 2)
-        self.fc1 = nn.Linear(512*height*width / 2**4, 1024)
-        self.fc1 = nn.Linear(1024, 1)
+        self.fc1 = nn.Linear(int(512*(height/2**4)*(width/2**4)), 1024)
+        self.fc2 = nn.Linear(1024, 1)
 
     def forward(self, image):
         x = self.conv1(image)
@@ -95,7 +108,7 @@ class Discriminator(nn.Module):
 
 class Generator(nn.Module):
     def __init__(self):
-        super(Generator, self).__init()
+        super(Generator, self).__init__()
         self.conv1 = ConvLayer(3, 64, 9, 1, activation="prelu", bn=False)
         self.res1 = ResBlock([64, 64], [64, 64])
         self.res2 = ResBlock([64, 64], [64, 64])
@@ -104,8 +117,9 @@ class Generator(nn.Module):
         self.res5 = ResBlock([64, 64], [64, 64])
         self.conv2 = ConvLayer(64, 64, 3, 1, activation=None)
         self.conv3 = ConvLayerPixelShuffler(64, 256, 3, 1)
-        self.conv4 = ConvLayerPixelShuffler(256, 256, 3, 1)
-        self.conv5 = nn.Conv2d(256, 3, 9, 1, padding="same")
+        # Number of output channels after pixel shuffler is reduced 4 times
+        self.conv4 = ConvLayerPixelShuffler(64, 256, 3, 1)
+        self.conv5 = nn.Conv2d(64, 3, 9, 1, padding="same")
 
     def forward(self, image):
         conv1 = self.conv1(image)
@@ -120,4 +134,3 @@ class Generator(nn.Module):
         x = self.conv4(x)
         output = self.conv5(x)
         return output
-
