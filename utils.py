@@ -3,6 +3,8 @@ import logging
 import torch
 import numpy as np
 import cv2 as cv
+from scipy.ndimage import uniform_filter
+
 
 def get_logger():
     """
@@ -89,3 +91,50 @@ def postprocess_image(image):
     image = image * 256
     image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
     return image
+
+
+def ssim(img1_org, img2_org, dynamic_range=255):
+    """
+    Compute Structural Similarity Index (SSIM) between two images.
+    Parameters:
+        img1 : numpy.ndarray
+            Reference image.
+        img2 : numpy.ndarray
+            Comparison image.
+        dynamic_range : int, optional
+            Dynamic range of the images (default is 255 for 8-bit images).
+    Returns:
+        ssim_index : float
+            SSIM index between the two images.
+    """
+    ssim_index = []
+    # Calculate SSIM for each color channel
+    for c in range(3):
+        img1 = img1_org[:,:,c]
+        img2 = img2_org[:,:,c]
+        img1 = img1.astype(np.float32)
+        img2 = img2.astype(np.float32)
+
+        # Compute constants for SSIM calculation
+        K1 = 0.01
+        K2 = 0.03
+        L = dynamic_range
+        C1 = (K1*L)**2
+        C2 = (K2*L)**2
+
+        # Compute mean and variance of images
+        mu1 = uniform_filter(img1, (11, 11))
+        mu2 = uniform_filter(img2, (11, 11))
+        mu1_sq = mu1**2
+        mu2_sq = mu2**2
+        mu1_mu2 = mu1 * mu2
+        sigma1_sq = uniform_filter(img1**2, (11, 11)) - mu1_sq
+        sigma2_sq = uniform_filter(img2**2, (11, 11)) - mu2_sq
+        sigma12 = uniform_filter(img1 * img2, (11, 11)) - mu1_mu2
+        
+        # Compute SSIM
+        num = (2 * mu1_mu2 + C1) * (2 * sigma12 + C2)
+        den = (mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2)
+        ssim_index.append(np.mean(num / den))
+
+    return np.mean(ssim_index)

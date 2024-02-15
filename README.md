@@ -91,6 +91,7 @@ Monitor training progress using TensorBoard. Generated images will be displayed 
 ```
 tensorboard --logdir .
 ```
+TensorBoard displays learning rate, loss, and SSIM. More details about SSIM are below.
 
 ## Test
 To test the trained generator model on sample of images run the script `test.py` with the following arguments:
@@ -98,10 +99,11 @@ To test the trained generator model on sample of images run the script `test.py`
 --gen-model-path - Path to trained generator model - PyTorch file
 --input-dir - Path to directory with images for test
 --out-dir - Path to output directory for saving images
+--high-res-images - [Optional] Path to directory with high resolution images. Only for calculating SSIM
 ```
 Ensure that the images in the input directory are low-resolution images downscaled by the specified factor. In this case `downsample_factor` is 4.
 
-This script is used to verify the model after the training on a sample of images.
+This script is used to verify the model after the training on a sample of images. The output of the script are generated images specified as `out-dir` and SSIM metric if `high-res-images` is provided. The SSIM (Structural Similarity Index) measures the similarity between the original high resolution image and generated image. It quantifies the similarity of structures (patterns, textures) in the images rather than simply measuring pixel-wise differences.
 
 ## Results
 The model is trained on [CelebA dataset](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html).

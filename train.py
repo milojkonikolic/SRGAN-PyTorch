@@ -3,9 +3,10 @@ import argparse
 import yaml
 from tqdm import tqdm
 import torch
+import numpy as np
 from tensorboardX import SummaryWriter
 
-from utils import get_logger, get_gpu, get_optimizer, save_weights
+from utils import get_logger, get_gpu, get_optimizer, save_weights, postprocess_image, ssim
 from dataset import create_dataloader
 from model import Generator, Discriminator
 from loss import ContentLoss, AdversarialLoss
@@ -47,6 +48,7 @@ def train(config):
 
     for epoch in tqdm(range(config["Hyperparameters"]["epochs"])):
         pbar = tqdm(train_dataloader)
+        ssim_indexes = []
         for image_hr, image_lr in pbar:
             image_hr = image_hr.cuda(gpu)
             image_lr = image_lr.cuda(gpu)
@@ -80,17 +82,27 @@ def train(config):
             generator_optimizer.step()
             tb_writer.add_scalar("Generator Loss", generator_loss.item(), global_step)
 
+            # Calculate SSIM
+            generator_image_postp = postprocess_image(generator_image)
+            image_hr_postp = postprocess_image(image_hr)
+            ssim_idx = ssim(generator_image_postp, image_hr_postp)
+            ssim_indexes.append(ssim_idx)
+
             total_loss += generator_loss
             tb_writer.add_scalar("Total Loss", total_loss.item(), global_step)
-            
+
             global_step += 1
-            pbar.set_description(f"epoch: {epoch}/{config['Hyperparameters']['epochs']}, batch: {batch}/{total_batches}, "
+            ssim_mean = round(float(np.mean(np.array(ssim_indexes))), 2)
+            pbar.set_description(f"epoch: {epoch}/{config['Hyperparameters']['epochs']}, ssim: {ssim_mean}, "
                                  f"loss: {round(float(total_loss), 5)}")
 
             if global_step % tb_images_num == 0:
                 tb_writer.add_image("generated_image", generator_image[0,:,:,:], global_step)
                 tb_writer.add_image("low_res_image", image_lr[0,:,:,:], global_step)
                 tb_writer.add_image("high_res_image", image_hr[0,:,:,:], global_step)
+        
+        ssim_idx = np.mean(np.array(ssim_indexes))
+        tb_writer.add_scalar("SSIM", ssim_idx, global_step)
 
         generator_lr_scheduler.step(epoch)
         discriminator_lr_scheduler.step(epoch)

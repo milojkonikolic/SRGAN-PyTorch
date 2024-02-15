@@ -6,7 +6,7 @@ import numpy as np
 import cv2 as cv
 
 from model import Generator
-from utils import postprocess_image
+from utils import postprocess_image, ssim
 
 
 def read_image(img_path):
@@ -34,6 +34,8 @@ if __name__ == "__main__":
                         help="Path to directory with images for test")
     parser.add_argument("--out-dir", type=str, default='',
                         help="Path to output directory for saving images")
+    parser.add_argument("--high-res-images", type=str, default='',
+                        help="[Optional] Path to directory with high resolution images. Only for calculating SSIM")
     args = parser.parse_args()
 
     # Load generator model
@@ -43,6 +45,8 @@ if __name__ == "__main__":
 
     if not os.path.exists(args.out_dir):
         os.makedirs(args.out_dir)
+    ssim_indexes = []
+
     # Generate image for each low resoltion image in the input-dir
     for img_file in tqdm(os.listdir(args.input_dir)):
         img_path = os.path.join(args.input_dir, img_file)
@@ -51,3 +55,14 @@ if __name__ == "__main__":
         gen_image = postprocess_image(gen_image)
         out_img_path = os.path.join(args.out_dir, img_file)
         cv.imwrite(out_img_path, gen_image)
+
+        if args.high_res_images:
+            high_res_image_path = os.path.join(args.high_res_images, img_file)
+            if os.path.exists(high_res_image_path):
+                high_res_image = cv.imread(high_res_image_path)
+                ssim_idx = ssim(high_res_image, gen_image)
+                ssim_indexes.append(ssim_idx)
+    if ssim_indexes:
+        print(f"Total SSIM: {np.mean(np.array(ssim_indexes))}")
+    else:
+        "WARNING: SSIM cannot be calculated. Not provided high-res-images or images are not found."
