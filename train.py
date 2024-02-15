@@ -3,13 +3,12 @@ import argparse
 import yaml
 from tqdm import tqdm
 import torch
-from torchvision.utils import make_grid
+from tensorboardX import SummaryWriter
 
 from utils import get_logger, get_gpu, get_optimizer, save_weights
 from dataset import create_dataloader
 from model import Generator, Discriminator
 from loss import ContentLoss, AdversarialLoss
-from tensorboardX import SummaryWriter
 
 
 def train(config):
@@ -84,9 +83,6 @@ def train(config):
             total_loss += generator_loss
             tb_writer.add_scalar("Total Loss", total_loss.item(), global_step)
             
-            tb_writer.add_scalar("Generator LR", generator_optimizer.param_groups[0]["lr"], global_step)
-            tb_writer.add_scalar("Discriminator LR", discriminator_optimizer.param_groups[0]["lr"], global_step)
-            
             global_step += 1
             pbar.set_description(f"epoch: {epoch}/{config['Hyperparameters']['epochs']}, batch: {batch}/{total_batches}, "
                                  f"loss: {round(float(total_loss), 5)}")
@@ -94,9 +90,12 @@ def train(config):
             if global_step % tb_images_num == 0:
                 tb_writer.add_image("generated_image", generator_image[0,:,:,:], global_step)
                 tb_writer.add_image("low_res_image", image_lr[0,:,:,:], global_step)
+                tb_writer.add_image("high_res_image", image_hr[0,:,:,:], global_step)
 
         generator_lr_scheduler.step(epoch)
         discriminator_lr_scheduler.step(epoch)
+        tb_writer.add_scalar("Generator LR", generator_optimizer.param_groups[0]["lr"], global_step)
+        tb_writer.add_scalar("Discriminator LR", discriminator_optimizer.param_groups[0]["lr"], global_step)
 
         save_weights(generator_net, weights_dir, "generator", epoch, logger)
         save_weights(discriminator_net, weights_dir, "discriminator", epoch, logger)

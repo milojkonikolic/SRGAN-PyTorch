@@ -4,7 +4,15 @@ import torch.nn.functional as F
 
 
 def get_pad(kernel_size):
-
+    """
+    Calculate padding size for 'same' padding mode.
+    Args:
+        kernel_size (int or tuple): Size of the convolutional kernel.
+    Returns:
+        int or tuple: Padding size to achieve 'same' padding.
+    Raises:
+        ValueError: If kernel_size type is not supported.
+    """
     if isinstance(kernel_size, int):
         return kernel_size // 2
     elif isinstance(kernel_size, list) or isinstance(kernel_size, tuple):
@@ -15,6 +23,14 @@ def get_pad(kernel_size):
 
 
 class ResBlock(nn.Module):
+    """
+    Residual block module.
+    Args:
+        in_channels (tuple): Number of input channels for each convolutional layer.
+        out_channels (tuple): Number of output channels for each convolutional layer.
+        kernel_size (tuple, optional): Size of the convolutional kernels. Default is (3, 3).
+        strides (tuple, optional): Stride of the convolution. Default is (1, 1).
+    """
     def __init__(self, in_channels, out_channels, kernel_size=(3, 3), strides=(1, 1)):
         super(ResBlock, self).__init__()
         self.conv1 = nn.Conv2d(in_channels[0], out_channels[0], kernel_size[0],
@@ -33,6 +49,13 @@ class ResBlock(nn.Module):
             self.shortcut = nn.Sequential()
 
     def forward(self, x):
+        """
+        Forward pass through the residual block.
+        Args:
+            x (torch.Tensor): Input tensor.
+        Returns:
+            torch.Tensor: Output tensor.
+        """
         out = F.prelu(self.bn1(self.conv1(x)), torch.tensor(0.25, device='cuda'))
         out = self.bn2(self.conv2(out))
         out = out + self.shortcut(x)
@@ -40,6 +63,17 @@ class ResBlock(nn.Module):
 
 
 class ConvLayer(nn.Module):
+    """
+    Convolutional layer module with optional activation and batch normalization.
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        kernel_size (int or tuple): Size of the convolutional kernel.
+        stride (int): Stride of the convolution.
+        padding (str or int or tuple, optional): Padding type or size. Default is 'same'.
+        activation (str, optional): Activation function type. Default is 'lrelu'.
+        bn (bool, optional): Whether to use batch normalization. Default is True.
+    """
     def __init__(self, in_channels, out_channels, kernel_size, stride, padding="same", activation="lrelu", bn=True):
         super(ConvLayer, self).__init__()
         if padding == "same" and stride > 1:
@@ -51,6 +85,13 @@ class ConvLayer(nn.Module):
         self.batch_norm = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
+        """
+        Forward pass through the convolutional layer.
+        Args:
+            x (torch.Tensor): Input tensor.
+        Returns:
+            torch.Tensor: Output tensor.
+        """
         x = self.conv(x)
         if self.bn:
             x = self.batch_norm(x)
@@ -62,6 +103,14 @@ class ConvLayer(nn.Module):
 
 
 class ConvLayerPixelShuffler(nn.Module):
+    """
+    Convolutional layer with pixel shuffler module.
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        kernel_size (int or tuple): Size of the convolutional kernel.
+        stride (int): Stride of the convolution.
+    """
     def __init__(self, in_channels, out_channels, kernel_size, stride):
         super(ConvLayerPixelShuffler, self).__init__()
         self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels,
@@ -69,6 +118,13 @@ class ConvLayerPixelShuffler(nn.Module):
         self.pixelShuffler = nn.PixelShuffle(2)
 
     def forward(self, x):
+        """
+        Forward pass through the convolutional layer with pixel shuffler.
+        Args:
+            x (torch.Tensor): Input tensor.
+        Returns:
+            torch.Tensor: Output tensor.
+        """
         x = self.conv(x)
         x = self.pixelShuffler(x)
         x = F.prelu(x, torch.tensor(0.25, device='cuda'))
@@ -76,6 +132,12 @@ class ConvLayerPixelShuffler(nn.Module):
 
 
 class Discriminator(nn.Module):
+    """
+    Discriminator network module.
+    Args:
+        height (int): Height of the input image.
+        width (int): Width of the input image.
+    """
     def __init__(self, height, width):
         super(Discriminator, self).__init__()
         self.conv1 = ConvLayer(3, 64, 3, 1, bn=False)
@@ -90,6 +152,13 @@ class Discriminator(nn.Module):
         self.fc2 = nn.Linear(1024, 1)
 
     def forward(self, image):
+        """
+        Forward pass through the discriminator network.
+        Args:
+            image (torch.Tensor): Input image tensor.
+        Returns:
+            torch.Tensor: Output tensor.
+        """
         x = self.conv1(image)
         x = self.conv2(x)
         x = self.conv3(x)
@@ -107,6 +176,9 @@ class Discriminator(nn.Module):
 
 
 class Generator(nn.Module):
+    """
+    Generator network module.
+    """
     def __init__(self):
         super(Generator, self).__init__()
         self.conv1 = ConvLayer(3, 64, 9, 1, activation="prelu", bn=False)
@@ -122,6 +194,13 @@ class Generator(nn.Module):
         self.conv5 = nn.Conv2d(64, 3, 9, 1, padding="same")
 
     def forward(self, image):
+        """
+        Forward pass through the generator network.
+        Args:
+            image (torch.Tensor): Input image tensor.
+        Returns:
+            torch.Tensor: Output tensor.
+        """
         conv1 = self.conv1(image)
         x = self.res1(conv1)
         x = self.res2(x)

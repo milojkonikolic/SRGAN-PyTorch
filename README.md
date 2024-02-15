@@ -62,7 +62,13 @@ The input to the GAN model consists of two images: the original image from the d
 
 Due to the challenging task of generating realistic images, the generator neural network is trained generator_num times more frequently than the discriminator neural network.
 
-### Inference
+### Test
+To test the trained generator model on sample of images run the script `test.py` with the following arguments:
+```
+--gen-model-path - Path to trained generator model - PyTorch file
+--input-dir - Path to directory with images for test
+--out-dir - Path to output directory for saving images
+```
+Note that images in the dir `input-dir` need to be low resolution images and `downsample_factor` times smaller than the original image. In this case `downsample_factor` is 4.
 
-
-### Results
+## Results
