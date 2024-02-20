@@ -16,17 +16,19 @@ class DatasetBuilder(Dataset):
     Returns:
         torch.utils.data.Dataset: Custom dataset object.
     """
-    def __init__(self, data_path, img_size, downsample_factor):
+    def __init__(self, data_path, img_size, downsample_factor, gaussian_blur):
         """
         Initialize the DatasetBuilder.
         Args:
             data_path (str): Path to the JSON file containing image paths.
             img_size (tuple): Size of the output images in the format (height, width).
             downsample_factor (int): Factor by which the low-resolution images are downsampled.
+            gaussian_blur (bool): If True apply Gaussian blur
         """
         self.data = self.read_data(data_path)
         self.img_size = img_size
         self.downsample_factor = downsample_factor
+        self.gaussian_blur = gaussian_blur
 
     def __len__(self):
         """
@@ -48,7 +50,7 @@ class DatasetBuilder(Dataset):
         image_hr = self.preprocess_image(image_hr)
         # Create low resolution image using Gaussian filter and downsampling factor
         image_lr = self.read_image(img_path)
-        image_lr = self.preprocess_image(image_lr, gaussian_blur=True, downsample=True)
+        image_lr = self.preprocess_image(image_lr, gaussian_blur=self.gaussian_blur, downsample=True)
         return image_hr, image_lr
 
     def read_data(self, data_path):
@@ -103,20 +105,21 @@ class DatasetBuilder(Dataset):
         return torch.FloatTensor(image)
 
 
-def create_dataloader(data_path, img_size, downsample_factor, batch_size, num_workers=0, shuffle=False):
+def create_dataloader(data_path, img_size, downsample_factor, gaussian_blur, batch_size, num_workers=0, shuffle=False):
     """
     Create a data loader for the custom dataset.
     Args:
         data_path (str): Path to the JSON file containing image paths.
         img_size (tuple): Size of the output images in the format (height, width).
         downsample_factor (int): Factor by which the low-resolution images are downsampled.
+        gaussian_blur (bool): If True apply Gaussian blur
         batch_size (int): Batch size for the data loader.
         num_workers (int, optional): Number of worker processes for data loading. Default is 0.
         shuffle (bool, optional): Whether to shuffle the data. Default is False.
     Returns:
         torch.utils.data.DataLoader: Data loader object.
     """
-    dataset = DatasetBuilder(data_path, img_size, downsample_factor)
+    dataset = DatasetBuilder(data_path, img_size, downsample_factor, gaussian_blur)
     dataloader = DataLoader(dataset=dataset, pin_memory=True, batch_size=batch_size, 
                                   num_workers=num_workers, shuffle=shuffle)
     return dataloader

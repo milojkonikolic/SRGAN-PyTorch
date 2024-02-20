@@ -3,6 +3,7 @@ Data:
   val_data_path: "/hdd/train_logs/SRGAN/data/img_align_celeba/val.json"
   input_shape: [192, 128]  # Input shape to the network in the format [width, height]
   downsample_factor: 4  # Downsample factor for low resolution images
+  gaussian_blur: True  # Apply Gaussian blur on original images to create low resolution images
   num_workers: 30  # Number of dataloader workers
   gpu: 0  # GPU ID
 Generator:
@@ -15,8 +16,7 @@ Discriminator:
   lr: 0.0001
 Hyperparameters:
   batch_size: 16
-  epochs: 10
+  epochs: 150
   generator_num: 5  # Train generator generator_num times more often than discriminator
 Logging:
-  tb_images_per_epoch: 5  # How many images to generate on Tensorboard during an epoch
   train_logs: "/hdd/train_logs/SRGAN/train_logs/img_align_celeba/run2"
