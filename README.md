@@ -48,7 +48,7 @@ No annotations are required for training SRGAN. The preparation of data is strai
   "/Datasets/CelebA/img_4.jpg"
 ]
 ```
-Two JSON files are required for training. One JSON file for with training images and the second JSON file with validation images. The split to train and random is done randomly by selecting 20% of data for validation dataset. The format for both train and validation JSON files is the same (shown above).
+Two JSON files are required for training. One JSON file with training images and the second JSON file with validation images. The split to train and random is done randomly by selecting 20% of data for validation dataset. The format for both train and validation JSON files is the same (shown above).
 
 ## Training
 All the parameters required for training are specified in the `config.yaml` file:
@@ -58,6 +58,7 @@ Data:
   val_data_path: "/Datasets/SRGAN/CelebA/val.json"
   input_shape: [192, 128]  # Input shape to the network in the format [width, height]
   downsample_factor: 4  # Downsample factor for low resolution images
+  gaussian_blur: True  # Apply Gaussian blur on original images to create low resolution images
   num_workers: 30  # Number of dataloader workers
   gpu: 0  # GPU ID
 Generator:
@@ -70,8 +71,7 @@ Discriminator:
   lr: 0.0001
 Hyperparameters:
   batch_size: 16
-  epochs: 10
-  generator_num: 5  # Train generator generator_num times more often than discriminator
+  epochs: 150
 Logging:
   tb_images_per_epoch: 5  # How many images to generate on Tensorboard during an epoch
   train_logs: "/train_logs/SRGAN/train_logs/run1"
@@ -108,7 +108,10 @@ This script is used to verify the model after the training on a sample of images
 ## Results
 The model is trained on [CelebA dataset](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html).
 
-TODO: Metrics and visual examples
+During the training, the metric that is measured is SSIM. The value for this metric is about 0.85.
+
+TODO: Visual examples and tb logs
+
 
 ## License
 SRGAN-PyTorch is licensed under the MIT License.
