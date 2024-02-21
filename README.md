@@ -108,10 +108,27 @@ This script is used to verify the model after the training on a sample of images
 ## Results
 The model is trained on [CelebA dataset](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html).
 
-During the training, the metric that is measured is SSIM. The value for this metric is about 0.85.
+During the training, the metric that is measured is SSIM. The value for this metric is about 0.93 on validation images.
 
-TODO: Visual examples and tb logs
+The following images represent tensorboard logs: generator loss and validation SSIM during the training.
+![Generator Loss](./examples/generator_loss.png "Generator Loss")
 
+![Val SSIM](./examples/Val_SSIM.png "Val SSIM")
+
+Here are visual examples from the validation dataset. The left images is low resolution image, while the right image is the generated image.
+
+![IMG1](./examples/012828.jpg)
+![IMG2](./examples/094869.jpg)
+![IMG3](./examples/197173.jpg)
+![IMG4](./examples/014432.jpg)
+![IMG5](./examples/095126.jpg)
+![IMG6](./examples/198171.jpg)
+![IMG7](./examples/035662.jpg)
+![IMG8](./examples/100852.jpg)
+![IMG9](./examples/165808.jpg)
+![IMG10](./examples/074470.jpg)
+![IMG11](./examples/039354.jpg)
+![IMG12](./examples/181644.jpg)
 
 ## License
 SRGAN-PyTorch is licensed under the MIT License.
