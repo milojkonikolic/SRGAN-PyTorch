@@ -5,8 +5,8 @@ import torch
 import numpy as np
 import cv2 as cv
 
-from model import Generator
-from utils import postprocess_image, ssim
+from model.model import Generator
+from utils.utils import postprocess_image, ssim
 
 
 def read_image(img_path):

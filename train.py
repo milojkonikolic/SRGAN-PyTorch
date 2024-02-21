@@ -6,10 +6,10 @@ import torch
 import numpy as np
 from tensorboardX import SummaryWriter
 
-from utils import get_logger, get_gpu, get_optimizer, save_weights, postprocess_image, ssim
-from dataset import create_dataloader
-from model import Generator, Discriminator
-from loss import ContentLoss, AdversarialLoss
+from utils.utils import get_logger, get_gpu, get_optimizer, save_weights, postprocess_image, ssim
+from dataset.dataset import create_dataloader
+from model.model import Generator, Discriminator
+from model.loss import ContentLoss, AdversarialLoss
 
 
 def train(config):
